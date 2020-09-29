@@ -1,5 +1,5 @@
 # TinySensors
-IoT sensor network built on the Tiny328 board by Owltronics
+IoT sensor network built on the Owlet board by Owltronics
 
 ## NetworkDefs
 Defines the sensor types and the payload structure for each of them.
