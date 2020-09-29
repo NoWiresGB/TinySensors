@@ -46,7 +46,7 @@ typedef struct {
   uint16_t  relativeHumidity;
   uint16_t  batteryVoltage;
 } __attribute__((packed)) Payload;
-Payload txData;
+Payload txPayload;
 #endif
 
 // Temperature and pressure sensor
@@ -58,5 +58,5 @@ typedef struct {
   uint16_t  pressure;
   uint16_t  batteryVoltage;
 } __attribute__((packed)) Payload;
-Payload txData;
+Payload txPayload;
 #endif
