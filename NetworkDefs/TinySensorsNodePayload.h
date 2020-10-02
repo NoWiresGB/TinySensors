@@ -7,8 +7,8 @@ typedef struct {
   uint8_t   nodeFunction;
   uint16_t  power1;
   uint16_t  VRms1;
-} __attribute__((packed)) Payload;
-Payload txPayload;
+} __attribute__((packed)) SinglePowerPayload;
+SinglePowerPayload txSinglePowerPayload;
 #endif
 
 // Double mains power sensor + Vrms
@@ -19,8 +19,8 @@ typedef struct {
   uint16_t  power1;
   uint16_t  power2;
   uint16_t  VRms1;
-} __attribute__((packed)) Payload;
-Payload txPayload;
+} __attribute__((packed)) DoublePowerPayload;
+DoublePowerPayload txDoublePowerPayload;
 #endif
 
 // Quad mains power sensor + Vrms
@@ -33,8 +33,8 @@ typedef struct {
   uint16_t  power3;
   uint16_t  power4;
   uint16_t  VRms1;
-} __attribute__((packed)) Payload;
-Payload txPayload;
+} __attribute__((packed)) QuadPowerPayload;
+QuadPowerPayload txQuadPowerPayload;
 #endif
 
 // Temperature and humidity sensor
@@ -45,8 +45,8 @@ typedef struct {
   uint16_t  temperature;
   uint16_t  relativeHumidity;
   uint16_t  batteryVoltage;
-} __attribute__((packed)) Payload;
-Payload txPayload;
+} __attribute__((packed)) TempRhPayload;
+TempRhPayload txTempRhPayload;
 #endif
 
 // Temperature and pressure sensor
@@ -57,6 +57,6 @@ typedef struct {
   uint16_t  temperature;
   uint16_t  pressure;
   uint16_t  batteryVoltage;
-} __attribute__((packed)) Payload;
-Payload txPayload;
+} __attribute__((packed)) TempPressurePayload;
+TempPressurePayload txTempPressurePayload;
 #endif

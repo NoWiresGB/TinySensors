@@ -123,10 +123,10 @@ void loop() {
     }
 
     // populate our payload
-    txPayload.nodeId = NODEID;
-    txPayload.nodeFunction = SENSORNODE_TEMP_RH;
-    txPayload.temperature = temperature * 100;
-    txPayload.relativeHumidity = humidity * 100;
+    txTempRhPayload.nodeId = NODEID;
+    txTempRhPayload.nodeFunction = SENSORNODE_TEMP_RH;
+    txTempRhPayload.temperature = temperature * 100;
+    txTempRhPayload.relativeHumidity = humidity * 100;
 
     // read the battery voltage
     Vanalog = analogRead(VBatPin);
@@ -139,13 +139,13 @@ void loop() {
     Serial.print(VBat);
     Serial.println("mV");
   
-    txPayload.batteryVoltage = VBat;
+    txTempRhPayload.batteryVoltage = VBat;
 
     // send the data over radio
     Serial.print("Sending struct (");
-    Serial.print(sizeof(txPayload));
+    Serial.print(sizeof(txTempRhPayload));
     Serial.print(" bytes) ... ");
-    if (radio.sendWithRetry(GATEWAYID, (const void*)(&txPayload), sizeof(txPayload))) {
+    if (radio.sendWithRetry(GATEWAYID, (const void*)(&txTempRhPayload), sizeof(txTempRhPayload))) {
       Serial.print(" ok!");
     } else {
       Serial.print(" nothing...");
