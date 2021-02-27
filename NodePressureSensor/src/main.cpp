@@ -29,9 +29,9 @@ unsigned long transmitPeriod = 60000;
 unsigned long lastSend = 2 * transmitPeriod;
 
 #ifdef ENABLE_ATC
-  RFM69_ATC radio;
+    RFM69_ATC radio;
 #else
-  RFM69 radio;
+    RFM69 radio;
 #endif
 
 // pressure sensor
@@ -74,83 +74,83 @@ void setup() {
 }
 
 void loop() {
-  // check for any received packets
-  // we don't expect anything, but let's be nice
-  if (radio.receiveDone()) {
-    Serial.print('[');
-    Serial.print(radio.SENDERID, DEC);
-    Serial.print("] ");
-    for (byte i = 0; i < radio.DATALEN; i++) {
-      Serial.print((char)radio.DATA[i]);
-    }
-    Serial.print("   [RX_RSSI:");
-    Serial.print(radio.readRSSI());
-    Serial.print("]");
+    // check for any received packets
+    // we don't expect anything, but let's be nice
+    if (radio.receiveDone()) {
+        Serial.print('[');
+        Serial.print(radio.SENDERID, DEC);
+        Serial.print("] ");
 
-    if (radio.ACKRequested())
-    {
-      radio.sendACK();
-      Serial.print(" - ACK sent");
-      delay(10);
-    }
-    Serial.println();
-  }
+        for (byte i = 0; i < radio.DATALEN; i++)
+            Serial.print((char)radio.DATA[i]);
 
-  // get the current time
-  unsigned long currentMillis = millis();
-  // let's see if we need to send a measurement
-  // cater for overflow of currentMillis every 50-odd days
-  if (currentMillis < lastSend || currentMillis - lastSend > transmitPeriod) {
-    Serial.print("Current time: ");
-    Serial.print(currentMillis);
-    Serial.print("   lastSend: ");
-    Serial.println(lastSend);
-    lastSend = currentMillis;
+        Serial.print("   [RX_RSSI:");
+        Serial.print(radio.readRSSI());
+        Serial.print("]");
 
-    // read the sensor data
-    if (bmp.performReading()) {
-        temperature = bmp.temperature;
-        pressure = bmp.pressure;
-
-        Serial.print("Temp *C = ");
-        Serial.print(temperature);
-        Serial.print("\t\t Pressure hPa = ");
-        Serial.println(pressure / 100.0);
-    } else {
-        Serial.println("Unable to read sensor data!");
-        temperature = 0;
-        pressure = 0;
+        if (radio.ACKRequested()) {
+            radio.sendACK();
+            Serial.print(" - ACK sent");
+            delay(10);
+        }
+        Serial.println();
     }
 
-    // populate our payload
-    txTempPressurePayload.nodeId = NODEID;
-    txTempPressurePayload.nodeFunction = SENSORNODE_TEMP_PRESSURE;
-    txTempPressurePayload.temperature = temperature * 100;
-    txTempPressurePayload.pressure = pressure;
+    // get the current time
+    unsigned long currentMillis = millis();
+    // let's see if we need to send a measurement
+    // cater for overflow of currentMillis every 50-odd days
+    if (currentMillis < lastSend || currentMillis - lastSend > transmitPeriod) {
+        Serial.print("Current time: ");
+        Serial.print(currentMillis);
+        Serial.print("   lastSend: ");
+        Serial.println(lastSend);
+        lastSend = currentMillis;
 
-    // read the battery voltage
-    Vanalog = analogRead(VBatPin);
-    Serial.print("ADCraw: ");
-    Serial.println(Vanalog);
-    // Calculate voltage: Internal Ref 1060mV..   VBAT---560k--^---220k---GND
-    // Adjusted for actual reading but need more accurate resistors really! - 5% LOL.
-    VBat = (Vanalog * 3750) / 1000;
-    Serial.print("VBat: ");
-    Serial.print(VBat);
-    Serial.println("mV");
+        // read the sensor data
+        if (bmp.performReading()) {
+            temperature = bmp.temperature;
+            pressure = bmp.pressure;
+
+            Serial.print("Temp *C = ");
+            Serial.print(temperature);
+            Serial.print("\t\t Pressure hPa = ");
+            Serial.println(pressure / 100.0);
+        } else {
+            Serial.println("Unable to read sensor data!");
+            temperature = 0;
+            pressure = 0;
+        }
+
+        // populate our payload
+        txTempPressurePayload.nodeId = NODEID;
+        txTempPressurePayload.nodeFunction = SENSORNODE_TEMP_PRESSURE;
+        txTempPressurePayload.temperature = temperature * 100;
+        txTempPressurePayload.pressure = pressure;
+
+        // read the battery voltage
+        Vanalog = analogRead(VBatPin);
+        Serial.print("ADCraw: ");
+        Serial.println(Vanalog);
+        // Calculate voltage: Internal Ref 1060mV..   VBAT---560k--^---220k---GND
+        // Adjusted for actual reading but need more accurate resistors really! - 5% LOL.
+        VBat = (Vanalog * 3750) / 1000;
+        Serial.print("VBat: ");
+        Serial.print(VBat);
+        Serial.println("mV");
   
-    txTempPressurePayload.batteryVoltage = VBat;
+        txTempPressurePayload.batteryVoltage = VBat;
 
-    // send the data over radio
-    Serial.print("Sending struct (");
-    Serial.print(sizeof(txTempPressurePayload));
-    Serial.print(" bytes) ... ");
+        // send the data over radio
+        Serial.print("Sending struct (");
+        Serial.print(sizeof(txTempPressurePayload));
+        Serial.print(" bytes) ... ");
 
-    if (radio.sendWithRetry(GATEWAYID, (const void*)(&txTempPressurePayload), sizeof(txTempPressurePayload)))
-        Serial.print(" ok!");
-    else
-        Serial.print(" nothing...");
+        if (radio.sendWithRetry(GATEWAYID, (const void*)(&txTempPressurePayload), sizeof(txTempPressurePayload)))
+            Serial.print(" ok!");
+        else
+            Serial.print(" nothing...");
 
-    Serial.println();
-  }
+        Serial.println();
+    }
 }
