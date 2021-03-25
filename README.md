@@ -9,3 +9,6 @@ Very basic network sniffer
 
 ## NodeTempHumiditySensor
 Temperature and Humidity sensor node based on SHT31
+
+## NodePressureSensor
+Pressure and Temperature sensor node based on BMP388

@@ -55,7 +55,7 @@ typedef struct {
   uint16_t  nodeId;
   uint8_t   nodeFunction;
   uint16_t  temperature;
-  uint16_t  pressure;
+  uint32_t  pressure;
   uint16_t  batteryVoltage;
 } __attribute__((packed)) TempPressurePayload;
 TempPressurePayload txTempPressurePayload;
