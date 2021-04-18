@@ -1,5 +1,13 @@
 // This file defines the payload data for each sensor
 
+#ifdef IS_SENSOR_AUTO_TEST
+typedef struct {
+  uint16_t  nodeId;
+  uint8_t   nodeFunction;
+} __attribute__((packed)) AutoTestPayload;
+AutoTestPayload txAutoTestPayload;
+#endif
+
 // Single mains power sensor + Vrms
 #ifdef IS_SENSOR_POWER_SINGLE
 typedef struct {
