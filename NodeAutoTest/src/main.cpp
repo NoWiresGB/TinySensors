@@ -9,11 +9,16 @@
 #include <RFM69.h>
 #include <RFM69_ATC.h>
 
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Wire.h>
+
+#include "SSD1306Ascii.h"
+#include "SSD1306AsciiWire.h"
+
+#include <SPI.h>
+#include <SD.h>
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
 // radio network parameters
 #define NODEID      6
@@ -27,7 +32,7 @@
 #define SERIAL_BAUD 115200
 
 // how often report the measurements
-unsigned long transmitPeriod = 60000;
+unsigned long transmitPeriod = 3000;
 // this will ensure that we'll send a measurement straight away
 unsigned long lastSend = 2 * transmitPeriod;
 
@@ -38,36 +43,39 @@ unsigned long lastSend = 2 * transmitPeriod;
 #endif
 
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+SSD1306AsciiWire display;
 
+#define SD_CHIPSELECT   9
+//File myFile;
 
 void updateDisplay() {
-    display.clearDisplay();
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
+    display.setFont(System5x7);
+    display.clear();
     display.println(F("TinySensors tester"));
-    display.setCursor(0, 12);
     display.println(F("Net - 90  Node - 6"));
-    display.setCursor(0, 24);
     display.println(F("Time up: 328s"));
-    display.setCursor(0, 36);
     display.println(F("Packets out: 56"));
-    display.setCursor(0, 48);
-    display.println(F("Status: wait (1s)"));
-    display.display();
+    display.print(F("Status: wait ("));
+    display.print(millis()/1000);
+    display.println(F("s)"));
 }
 
 
 void setup() {
     Serial.begin(SERIAL_BAUD);
-    Serial.println("TinySensors node starting up");
+    Serial.println(F("TinySensors node starting up"));
 
-    if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS))
-        Serial.println(F("SSD1306 allocation failed"));
+    Wire.begin();
+    Wire.setClock(400000L);
+
+    display.begin(&Adafruit128x64, SCREEN_ADDRESS);
     
     updateDisplay();
-    
+
+    if (!SD.begin(SD_CHIPSELECT)) {
+        Serial.println(F("Cannot initialise SD card"));
+    }
+
     radio.initialize(FREQUENCY,NODEID,NETWORKID);
 
     radio.encrypt(ENCRYPTKEY);
@@ -126,5 +134,7 @@ void loop() {
             Serial.print(" nothing...");
 */
         Serial.println();
+
+        updateDisplay();
     }
 }
