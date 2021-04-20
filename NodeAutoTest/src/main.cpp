@@ -21,9 +21,9 @@
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
 // radio network parameters
-#define NODEID      6
-#define NETWORKID   90
-#define GATEWAYID   1
+long nodeId = 0;
+long networkId = 0;
+long gatewayId = 0;
 
 #define FREQUENCY     RF69_433MHZ
 #define ENCRYPTKEY    "sampleEncryptKey" // 16 character key for the network
@@ -46,38 +46,58 @@ unsigned long lastSend = 2 * transmitPeriod;
 SSD1306AsciiWire display;
 
 #define SD_CHIPSELECT   9
-//File myFile;
-
-void updateDisplay() {
-    display.setFont(System5x7);
-    display.clear();
-    display.println(F("TinySensors tester"));
-    display.println(F("Net - 90  Node - 6"));
-    display.println(F("Time up: 328s"));
-    display.println(F("Packets out: 56"));
-    display.print(F("Status: wait ("));
-    display.print(millis()/1000);
-    display.println(F("s)"));
-}
+File myFile;
 
 
 void setup() {
+    // Initialise serial port
     Serial.begin(SERIAL_BAUD);
     Serial.println(F("TinySensors node starting up"));
 
+    // start I2C
     Wire.begin();
     Wire.setClock(400000L);
 
+    // Initialise OLED display
     display.begin(&Adafruit128x64, SCREEN_ADDRESS);
-    
-    updateDisplay();
 
+    display.setFont(System5x7);
+    display.clear();
+
+    display.println(F("Initialising SD"));
+
+    // Initialise SD card
     if (!SD.begin(SD_CHIPSELECT)) {
         Serial.println(F("Cannot initialise SD card"));
     }
 
-    radio.initialize(FREQUENCY,NODEID,NETWORKID);
+    // read radio config from the SD card
+    display.println(F("Reading radio config"));
+    myFile = SD.open(F("radio.txt"));
+    if (myFile) {
+        nodeId = myFile.parseInt();
+        networkId = myFile.parseInt();
+        gatewayId = myFile.parseInt();
+        myFile.close();
 
+        if (nodeId == 0 || networkId == 0 || gatewayId == 0) {
+            display.println("Incorrect config");
+            while(true);
+        }
+
+        display.print(F("Network ID: "));
+        display.println(networkId);
+        display.print(F("Node ID: "));
+        display.println(nodeId);
+        display.print(F("Gateway ID: "));
+        display.println(gatewayId);
+    } else {
+        display.println(F("No 'radio.txt'"));
+        while(true);
+    }
+
+    // Initialise radio
+    radio.initialize(FREQUENCY, nodeId, networkId);
     radio.encrypt(ENCRYPTKEY);
     char buff[50];
     sprintf(buff, "\nTransmitting at %d Mhz...", FREQUENCY==RF69_433MHZ ? 433 : FREQUENCY==RF69_868MHZ ? 868 : 915);
@@ -89,20 +109,20 @@ void loop() {
     // check for any received packets
     // we don't expect anything, but let's be nice
     if (radio.receiveDone()) {
-        Serial.print('[');
+        Serial.print(F("["));
         Serial.print(radio.SENDERID, DEC);
-        Serial.print("] ");
+        Serial.print(F("] "));
 
         for (byte i = 0; i < radio.DATALEN; i++)
             Serial.print((char)radio.DATA[i]);
 
-        Serial.print("   [RX_RSSI:");
+        Serial.print(F("   [RX_RSSI:"));
         Serial.print(radio.readRSSI());
-        Serial.print("]");
+        Serial.print(F("]"));
 
         if (radio.ACKRequested()) {
             radio.sendACK();
-            Serial.print(" - ACK sent");
+            Serial.print(F(" - ACK sent"));
             delay(10);
         }
         Serial.println();
@@ -113,28 +133,28 @@ void loop() {
     // let's see if we need to send a measurement
     // cater for overflow of currentMillis every 50-odd days
     if (currentMillis < lastSend || currentMillis - lastSend > transmitPeriod) {
-        Serial.print("Current time: ");
+        Serial.print(F("Current time: "));
         Serial.print(currentMillis);
-        Serial.print("   lastSend: ");
+        Serial.print(F("   lastSend: "));
         Serial.println(lastSend);
         lastSend = currentMillis;
 
         // populate our payload
-        txAutoTestPayload.nodeId = NODEID;
+        txAutoTestPayload.nodeId = nodeId;
         txAutoTestPayload.nodeFunction = SENSORNODE_AUTOTEST;
 
         // send the data over radio
-        Serial.print("Sending struct (");
+        Serial.print(F("Sending struct ("));
         Serial.print(sizeof(txAutoTestPayload));
-        Serial.print(" bytes) ... ");
+        Serial.print(F(" bytes) ... "));
 /*
-        if (radio.sendWithRetry(GATEWAYID, (const void*)(&txAutoTestPayload), sizeof(txAutoTestPayload)))
+        if (radio.sendWithRetry(gatewayId, (const void*)(&txAutoTestPayload), sizeof(txAutoTestPayload)))
             Serial.print(" ok!");
         else
             Serial.print(" nothing...");
 */
         Serial.println();
 
-        updateDisplay();
+        //updateDisplay();
     }
 }
