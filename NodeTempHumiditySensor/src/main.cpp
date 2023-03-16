@@ -14,7 +14,7 @@
 
 // radio network parameters
 #define NODEID      3
-#define NETWORKID   89
+#define NETWORKID   90
 #define GATEWAYID   1
 
 #define FREQUENCY     RF69_433MHZ

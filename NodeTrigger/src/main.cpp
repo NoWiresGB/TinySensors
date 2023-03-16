@@ -2,18 +2,15 @@
 
 #include "../../NetworkDefs/TinySensorsNodeTypes.h"
 // define the sensor type, so we have the correct payload definition
-#define IS_SENSOR_TEMP_PRESSURE
+#define IS_SENSOR_TRIGGER
 #include "../../NetworkDefs/TinySensorsNodePayload.h"
 
 // RF-related includes
 #include <RFM69.h>
 #include <RFM69_ATC.h>
 
-// BMP3XX sensor to provide the data
-#include <Adafruit_BMP3XX.h>
-
 // radio network parameters
-#define NODEID      4
+#define NODEID      5
 #define NETWORKID   90
 #define GATEWAYID   1
 
@@ -34,10 +31,10 @@ unsigned long lastSend = 2 * transmitPeriod;
     RFM69 radio;
 #endif
 
-// pressure sensor
-Adafruit_BMP3XX bmp; // I2C
-float temperature;
-float pressure;
+// set the last trigger value so that we send an initial 'measurement'
+uint8_t lastTrigger = -1;
+uint8_t currentTrigger;
+int triggerPin = PD3;
 
 // battery reading
 int VBatPin = A0;    // Reads in the analogue number of voltage
@@ -55,22 +52,12 @@ void setup() {
     sprintf(buff, "\nTransmitting at %d Mhz...", FREQUENCY==RF69_433MHZ ? 433 : FREQUENCY==RF69_868MHZ ? 868 : 915);
     Serial.println(buff);
 
-    if (!bmp.begin())
-        Serial.println("Could not find a valid BMP3 sensor, check wiring!");
-
-    // set various params for the pressure sensor
-    bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_8X);
-    bmp.setPressureOversampling(BMP3_OVERSAMPLING_4X);
-    bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_3);
-
-    // perform an initial read that we discard
-    bmp.performReading();
-    delay(50);
-
     // set the VRef to the internal 1.1V
     analogReference(INTERNAL1V1);
     // do an initial reading, which we discard
     Vanalog = analogRead(VBatPin);
+
+    pinMode(triggerPin, INPUT_PULLUP);
 }
 
 void loop() {
@@ -96,37 +83,16 @@ void loop() {
         Serial.println();
     }
 
-    // get the current time
-    unsigned long currentMillis = millis();
-    // let's see if we need to send a measurement
-    // cater for overflow of currentMillis every 50-odd days
-    if (currentMillis < lastSend || currentMillis - lastSend > transmitPeriod) {
-        Serial.print("Current time: ");
-        Serial.print(currentMillis);
-        Serial.print("   lastSend: ");
-        Serial.println(lastSend);
-        lastSend = currentMillis;
+    // read trigger status
+    currentTrigger = digitalRead(triggerPin);
 
-        // read the sensor data
-        if (bmp.performReading()) {
-            temperature = bmp.temperature;
-            pressure = bmp.pressure;
-
-            Serial.print("Temp *C = ");
-            Serial.print(temperature);
-            Serial.print("\t\t Pressure hPa = ");
-            Serial.println(pressure / 100.0);
-        } else {
-            Serial.println("Unable to read sensor data!");
-            temperature = 0;
-            pressure = 0;
-        }
-
+    if (lastTrigger != currentTrigger) {
+        // we need to send the trigger
         // populate our payload
-        txTempPressurePayload.nodeId = NODEID;
-        txTempPressurePayload.nodeFunction = SENSORNODE_TEMP_PRESSURE;
-        txTempPressurePayload.temperature = temperature * 100;
-        txTempPressurePayload.pressure = pressure;
+        txTriggerPayload.nodeId = NODEID;
+        txTriggerPayload.nodeFunction = SENSORNODE_TRIGGER;
+        // invert the trigger (as 0 is on and 1 is off)
+        txTriggerPayload.trigger = 1 - currentTrigger;
 
         // read the battery voltage
         Vanalog = analogRead(VBatPin);
@@ -139,18 +105,21 @@ void loop() {
         Serial.print(VBat);
         Serial.println("mV");
   
-        txTempPressurePayload.batteryVoltage = VBat;
+        txTriggerPayload.batteryVoltage = VBat;
 
         // send the data over radio
         Serial.print("Sending struct (");
-        Serial.print(sizeof(txTempPressurePayload));
+        Serial.print(sizeof(txTriggerPayload));
         Serial.print(" bytes) ... ");
 
-        if (radio.sendWithRetry(GATEWAYID, (const void*)(&txTempPressurePayload), sizeof(txTempPressurePayload)))
+        if (radio.sendWithRetry(GATEWAYID, (const void*)(&txTriggerPayload), sizeof(txTriggerPayload)))
             Serial.print(" ok!");
         else
             Serial.print(" nothing...");
 
         Serial.println();
+
+        // save the trigger status
+        lastTrigger = currentTrigger;
     }
 }

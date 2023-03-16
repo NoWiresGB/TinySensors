@@ -60,3 +60,14 @@ typedef struct {
 } __attribute__((packed)) TempPressurePayload;
 TempPressurePayload txTempPressurePayload;
 #endif
+
+// Temperature and pressure sensor
+#ifdef IS_SENSOR_TRIGGER
+typedef struct {
+  uint16_t  nodeId;
+  uint8_t   nodeFunction;
+  uint8_t   trigger;
+  uint16_t  batteryVoltage;
+} __attribute__((packed)) TriggerPayload;
+TriggerPayload txTriggerPayload;
+#endif

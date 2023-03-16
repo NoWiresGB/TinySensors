@@ -11,3 +11,6 @@
 #define SENSORNODE_TEMP_RH              4
 // Temperature and pressure sensor + Vbatt (e.g BMP388)
 #define SENSORNODE_TEMP_PRESSURE        5
+
+// Trigger sensor + Vbatt (e.g simple pushbutton)
+#define SENSORNODE_TRIGGER              6
