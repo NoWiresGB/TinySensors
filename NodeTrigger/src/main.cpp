@@ -10,7 +10,7 @@
 #include <RFM69_ATC.h>
 
 // radio network parameters
-#define NODEID      4
+#define NODEID      5
 #define NETWORKID   90
 #define GATEWAYID   1
 
@@ -30,6 +30,11 @@ unsigned long lastSend = 2 * transmitPeriod;
 #else
     RFM69 radio;
 #endif
+
+// set the last trigger value so that we send an initial 'measurement'
+uint8_t lastTrigger = -1;
+uint8_t currentTrigger;
+int triggerPin = PD3;
 
 // battery reading
 int VBatPin = A0;    // Reads in the analogue number of voltage
@@ -51,6 +56,8 @@ void setup() {
     analogReference(INTERNAL1V1);
     // do an initial reading, which we discard
     Vanalog = analogRead(VBatPin);
+
+    pinMode(triggerPin, INPUT_PULLUP);
 }
 
 void loop() {
@@ -76,23 +83,16 @@ void loop() {
         Serial.println();
     }
 
-    // get the current time
-    unsigned long currentMillis = millis();
-    // let's see if we need to send a measurement
-    // cater for overflow of currentMillis every 50-odd days
-    if (currentMillis < lastSend || currentMillis - lastSend > transmitPeriod) {
-        Serial.print("Current time: ");
-        Serial.print(currentMillis);
-        Serial.print("   lastSend: ");
-        Serial.println(lastSend);
-        lastSend = currentMillis;
+    // read trigger status
+    currentTrigger = digitalRead(triggerPin);
 
-        // read the sensor data
-
+    if (lastTrigger != currentTrigger) {
+        // we need to send the trigger
         // populate our payload
         txTriggerPayload.nodeId = NODEID;
         txTriggerPayload.nodeFunction = SENSORNODE_TRIGGER;
-        txTriggerPayload.trigger = 1;
+        // invert the trigger (as 0 is on and 1 is off)
+        txTriggerPayload.trigger = 1 - currentTrigger;
 
         // read the battery voltage
         Vanalog = analogRead(VBatPin);
@@ -118,5 +118,8 @@ void loop() {
             Serial.print(" nothing...");
 
         Serial.println();
+
+        // save the trigger status
+        lastTrigger = currentTrigger;
     }
 }

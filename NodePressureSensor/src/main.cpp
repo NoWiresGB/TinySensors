@@ -13,7 +13,7 @@
 #include <Adafruit_BMP3XX.h>
 
 // radio network parameters
-#define NODEID      3
+#define NODEID      4
 #define NETWORKID   90
 #define GATEWAYID   1
 
